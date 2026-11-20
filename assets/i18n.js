@@ -19,6 +19,7 @@
   let language = defaultLanguage;
   const attributes = ['alt', 'title', 'aria-label', 'placeholder', 'data-title', 'data-description', 'data-demo-title', 'data-demo-description', 'data-caption'];
   const originals = new WeakMap();
+  const sourceMetadata = new WeakMap();
   const skipped = node => node.parentElement?.closest('script, style, noscript, [data-i18n-skip]');
   const ui = {
     label: ['语言','Language','Langue','Sprache','Idioma'],
@@ -75,7 +76,17 @@
     const key = attribute || 'text';
     let record = records.get(key);
     // Remember the source separately so switching languages does not translate a translation.
-    if (!record || record.rendered !== current) record = { source: canonical(current), rendered: current };
+    if (!record || record.rendered !== current) {
+      const element = attribute ? node : node.parentElement;
+      if (element && !sourceMetadata.has(element)) {
+        sourceMetadata.set(element, JSON.parse(element.getAttribute('data-i18n-source') || '{}'));
+      }
+      const sourceKey = attribute || `text:${[...(element?.childNodes || [])].indexOf(node)}`;
+      const initialSource = sourceMetadata.get(element)?.[sourceKey];
+      // English HTML retains its source text for precise language switching.
+      const source = !record && initialSource !== undefined && current === translate(initialSource, defaultLanguage) ? initialSource : undefined;
+      record = { source: source ?? canonical(current), rendered: current };
+    }
     const next = translate(record.source);
     record.rendered = next;
     records.set(key, record);
