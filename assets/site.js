@@ -83,6 +83,48 @@
     }
   }
 
+  const facilityDemoPanel = document.getElementById('facility-demonstrations');
+  const facilityDemoToggles = [...document.querySelectorAll(
+    '#resources .facility-major--platforms > .context-links a[href^="#facility-video-"]'
+  )];
+  let activeFacilityDemoTarget = null;
+
+  function syncFacilityDemoToggles() {
+    facilityDemoToggles.forEach(toggle => {
+      toggle.setAttribute('aria-controls', facilityDemoPanel.id);
+      toggle.setAttribute('aria-expanded', String(facilityDemoPanel.open));
+    });
+    if (!facilityDemoPanel.open) {
+      activeFacilityDemoTarget = null;
+    } else if (!activeFacilityDemoTarget) {
+      activeFacilityDemoTarget = facilityDemoToggles.find(toggle => toggle.hash === window.location.hash)?.hash.slice(1) || null;
+    }
+  }
+
+  facilityDemoToggles.forEach(toggle => {
+    toggle.addEventListener('click', event => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+      event.preventDefault();
+      const target = document.getElementById(toggle.hash.slice(1));
+      if (!target) return;
+
+      if (facilityDemoPanel.open && activeFacilityDemoTarget === target.id) {
+        facilityDemoPanel.open = false;
+        history.pushState(null, '', pageAddress('#resources'));
+        facilityDemoPanel.querySelector('summary').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        facilityDemoPanel.open = true;
+        activeFacilityDemoTarget = target.id;
+        history.pushState(null, '', pageAddress(`#${target.id}`));
+        target.focus({ preventScroll: true });
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      syncFacilityDemoToggles();
+    });
+  });
+  facilityDemoPanel.addEventListener('toggle', syncFacilityDemoToggles);
+  syncFacilityDemoToggles();
+
   menuToggle.addEventListener('click', () => {
     const open = nav.hidden;
     setMenu(open);
