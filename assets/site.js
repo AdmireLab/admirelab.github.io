@@ -7,11 +7,20 @@
   const compact = window.matchMedia('(max-width: 800px)');
   const main = document.getElementById('content');
   const home = document.getElementById('home');
+  const facilitySidebar = document.getElementById('facilities-overview-sidebar');
   const homeAddress = window.location.pathname + window.location.search;
   const pageAddress = hash => homeAddress + (hash === '#top' ? '' : hash);
   for (const link of document.querySelectorAll('a[href="./"]')) link.setAttribute('href', homeAddress);
   const links = [...nav.querySelectorAll('a')];
   const sections = [...main.querySelectorAll(':scope > .section')];
+  document.querySelectorAll('#resources details').forEach(detail => {
+    detail.open = true;
+    const heading = detail.querySelector(':scope > summary');
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.setAttribute('aria-disabled', 'true');
+    }
+  });
   const pages = new Map([['#top', home], ...sections.map(section => ['#' + section.id, section])]);
   const sectionAnchors = new Map(
     [...main.querySelectorAll('[data-section-anchor], [data-publication-anchor], [data-exchange-anchor], #papers [id]')].map(anchor => [
@@ -60,6 +69,7 @@
     const hash = pages.has(sectionHash) ? sectionHash : '#top';
     const page = pages.get(hash);
     for (const section of pages.values()) section.hidden = section !== page;
+    if (facilitySidebar) facilitySidebar.hidden = page.id !== 'resources';
     if (teamTab) activateTeamTab(teamTab);
     currentLink?.removeAttribute('aria-current');
     currentLink = links.find(link => (link.hash || '#top') === hash);
@@ -82,48 +92,6 @@
       window.scrollTo(0, 0);
     }
   }
-
-  const facilityDemoPanel = document.getElementById('facility-demonstrations');
-  const facilityDemoToggles = [...document.querySelectorAll(
-    '#resources .facility-major--platforms > .context-links a[href^="#facility-video-"]'
-  )];
-  let activeFacilityDemoTarget = null;
-
-  function syncFacilityDemoToggles() {
-    facilityDemoToggles.forEach(toggle => {
-      toggle.setAttribute('aria-controls', facilityDemoPanel.id);
-      toggle.setAttribute('aria-expanded', String(facilityDemoPanel.open));
-    });
-    if (!facilityDemoPanel.open) {
-      activeFacilityDemoTarget = null;
-    } else if (!activeFacilityDemoTarget) {
-      activeFacilityDemoTarget = facilityDemoToggles.find(toggle => toggle.hash === window.location.hash)?.hash.slice(1) || null;
-    }
-  }
-
-  facilityDemoToggles.forEach(toggle => {
-    toggle.addEventListener('click', event => {
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-      event.preventDefault();
-      const target = document.getElementById(toggle.hash.slice(1));
-      if (!target) return;
-
-      if (facilityDemoPanel.open && activeFacilityDemoTarget === target.id) {
-        facilityDemoPanel.open = false;
-        history.pushState(null, '', pageAddress('#resources'));
-        facilityDemoPanel.querySelector('summary').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        facilityDemoPanel.open = true;
-        activeFacilityDemoTarget = target.id;
-        history.pushState(null, '', pageAddress(`#${target.id}`));
-        target.focus({ preventScroll: true });
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-      syncFacilityDemoToggles();
-    });
-  });
-  facilityDemoPanel.addEventListener('toggle', syncFacilityDemoToggles);
-  syncFacilityDemoToggles();
 
   menuToggle.addEventListener('click', () => {
     const open = nav.hidden;
